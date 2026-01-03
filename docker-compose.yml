@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+    # NestJS API Service
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: nestjs_api
+        ports:
+            - '${PORT:-3000}:3000'
+        environment:
+            DATABASE_URL: postgres://user:password@db:5432/nestjs_db
+            NODE_ENV: production
+        depends_on:
+            - db
+
+    # Database Service (PostgreSQL)
+    db:
+        image: postgres:15-alpine
+        container_name: nestjs_db
+        restart: always
+        environment:
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: nestjs_db
+        ports:
+            - '5432:5432'
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+volumes:
+    postgres_data:
