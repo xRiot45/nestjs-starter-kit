@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { UserEntity } from 'src/modules/users/entities/user.entity';
+import { UserEntity } from 'src/app/users/entities/user.entity';
 import { Repository } from 'typeorm';
 
 interface Tokens {

@@ -40,18 +40,30 @@ export class AuthController {
         private readonly configService: ConfigService,
     ) {}
 
+    @Post('register')
+    @HttpCode(HttpStatus.CREATED)
     @ApiDocGenericResponse({
         summary: 'Register New User',
         description:
             'Create a new user account and send a verification email. Returns a success message if the data is valid.',
-        status: HttpStatus.CREATED,
         body: RegisterDto,
+        consumes: 'application/json',
+        produces: 'application/json',
+        status: HttpStatus.CREATED,
+        response: BaseResponseDto,
+        customResponses: [
+            {
+                status: HttpStatus.CONFLICT,
+                description: 'Username or email already exists.',
+            },
+            {
+                status: HttpStatus.BAD_REQUEST,
+                description: 'Invalid input data.',
+            },
+        ],
     })
-    // @Throttle({ default: { limit: 3, ttl: 60000 } })
-    @Post('register')
-    @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerDto: RegisterDto): Promise<BaseResponseDto> {
-        await this.authService.register(registerDto);
+    async register(@Body() dto: RegisterDto): Promise<BaseResponseDto> {
+        await this.authService.register(dto);
         return {
             success: true,
             statusCode: HttpStatus.CREATED,

@@ -23,22 +23,6 @@ export class UserResponseDto {
     email: string;
 
     @ApiProperty({
-        example: 'https://cdn.example.com/avatars/user1.jpg',
-        description: 'URL to the user profile picture',
-        nullable: true,
-    })
-    @Expose()
-    avatarUrl: string;
-
-    @ApiProperty({
-        example: 'Software Engineer based in Jakarta.',
-        description: 'User short biography',
-        nullable: true,
-    })
-    @Expose()
-    bio: string;
-
-    @ApiProperty({
         example: '2026-01-03T13:00:00.000Z',
         description: 'Timestamp when the email was verified',
         nullable: true,

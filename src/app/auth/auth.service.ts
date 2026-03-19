@@ -25,6 +25,7 @@ import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class AuthService {
@@ -36,18 +37,19 @@ export class AuthService {
         private readonly configService: ConfigService,
         private readonly logger: LoggerService,
         private readonly tokenService: TokenService,
+        private readonly dataSource: DataSource,
     ) {}
 
     /**
-     * Register a new user in the system.
-     * @param registerDto The request data transfer object containing the username, email, password, and full name.
-     * @returns A promise of the UserResponseDto containing the newly registered user.
+     * Registers a new user.
+     * @param dto The request data transfer object containing the new user's details.
+     * @returns A promise of the UserResponseDto containing the newly registered user's details.
      * @throws ConflictException If the username or email already exists.
-     * @throws InternalServerErrorException If an error occurs during the registration process or sending the verification email.
+     * @throws InternalServerErrorException If an unexpected error occurs during the registration process or sending the verification email.
      */
-    async register(registerDto: RegisterDto): Promise<UserResponseDto> {
+    async register(dto: RegisterDto): Promise<UserResponseDto> {
         const context = `${AuthService.name}.register`;
-        const { username, email, password, fullName } = registerDto;
+        const { username, email, password, fullName } = dto;
 
         this.logger.log(`Starting registration process for user: ${email}`, context);
 
@@ -57,27 +59,31 @@ export class AuthService {
         });
 
         if (existingUser) {
-            this.logger.warn(
-                `Registration failed: Conflict detected. Username/Email already exists (${username} / ${email})`,
-                context,
-            );
+            this.logger.warn(`Registration failed: Conflict detected (${username} / ${email})`, context);
             throw new ConflictException('Username or Email already exists');
         }
 
-        this.logger.debug(`Hashing password for ${email}...`, context);
-        const salt = await bcrypt.genSalt();
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = this.userRepository.create({
-            username,
-            email,
-            fullName: fullName,
-            password: hashedPassword,
-        });
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
         try {
-            const savedUser = await this.userRepository.save(newUser);
-            this.logger.log(`User created successfully in database with ID: ${savedUser.id}`, context);
+            this.logger.debug(`Hashing password for ${email}...`, context);
+
+            const salt = await bcrypt.genSalt();
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            const newUser = queryRunner.manager.create(UserEntity, {
+                username,
+                email,
+                fullName,
+                password: hashedPassword,
+                isVerified: false,
+            });
+
+            const savedUser = await queryRunner.manager.save(newUser);
+
+            this.logger.log(`User created (not committed yet) ID: ${savedUser.id}`, context);
 
             const expiresInEnv = this.configService.get<string>('JWT_VERIFY_EMAIL_EXPIRES_IN');
             const expiresInValue = expiresInEnv ? parseInt(expiresInEnv, 10) : 900;
@@ -100,7 +106,7 @@ export class AuthService {
 
             await this.mailService.sendMail({
                 to: email,
-                subject: 'Welcome to ChatApp! Please verify your email',
+                subject: 'Welcome to NestJS Starter Kit! Please verify your email',
                 template: 'verify-email',
                 context: {
                     username: savedUser.username,
@@ -110,18 +116,23 @@ export class AuthService {
                 },
             });
 
-            this.logger.log(`Registration completed & verification email sent to: ${email}`, context);
+            await queryRunner.commitTransaction();
 
-            return plainToInstance(UserResponseDto, savedUser, {
-                excludeExtraneousValues: true,
-            });
+            this.logger.log(`Registration success & email sent: ${email}`, context);
+
+            return savedUser;
         } catch (error) {
+            await queryRunner.rollbackTransaction();
+
             this.logger.error(
-                `Registration process failed for ${email}: ${(error as Error).message}`,
+                `Registration failed for ${email}: ${(error as Error).message}`,
                 (error as Error).stack,
                 context,
             );
-            throw new InternalServerErrorException('Failed to register user or send verification email');
+
+            throw new InternalServerErrorException('Registration failed, email not sent');
+        } finally {
+            await queryRunner.release();
         }
     }
 

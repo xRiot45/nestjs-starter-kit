@@ -8,16 +8,16 @@ export class RegisterDto {
     @MaxLength(50)
     username: string;
 
+    @ApiProperty({ example: 'john@example.com', description: 'User email address' })
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+
     @ApiProperty({ example: 'John Doe', description: 'Full name of the user' })
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
     fullName: string;
-
-    @ApiProperty({ example: 'john@example.com', description: 'User email address' })
-    @IsEmail()
-    @IsNotEmpty()
-    email: string;
 
     @ApiProperty({ example: 'password123', description: 'User password (min 6 chars)', minLength: 6 })
     @IsString()

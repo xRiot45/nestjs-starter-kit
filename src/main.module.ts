@@ -1,12 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { CqrsModule } from '@nestjs/cqrs';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { DatabaseModule } from './core/database/database.module';
 import { LoggerModule } from './core/logger/logger.module';
-import { ModulesModule } from './modules/modules.module';
+import { AppModule } from './app/app.module';
 
 @Global()
 @Module({
@@ -14,7 +13,6 @@ import { ModulesModule } from './modules/modules.module';
         ConfigModule.forRoot({
             isGlobal: true,
         }),
-        CqrsModule.forRoot(),
         ThrottlerModule.forRoot([
             {
                 ttl: 60,
@@ -31,7 +29,7 @@ import { ModulesModule } from './modules/modules.module';
         ]),
         LoggerModule,
         DatabaseModule,
-        ModulesModule,
+        AppModule,
     ],
     providers: [
         ResponseInterceptor,

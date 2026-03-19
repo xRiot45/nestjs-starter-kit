@@ -1,4 +1,3 @@
-import { UserStatus } from 'src/common/enums/user-status.enum';
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('users')
@@ -18,12 +17,6 @@ export class UserEntity {
     @Column({ name: 'password', type: 'text' })
     password: string;
 
-    @Column({ name: 'avatarUrl', type: 'text', nullable: true })
-    avatarUrl: string;
-
-    @Column({ type: 'text', nullable: true })
-    bio: string;
-
     @Column({
         name: 'emailVerifiedAt',
         type: 'timestamp',
@@ -39,13 +32,6 @@ export class UserEntity {
     })
     isVerified: boolean;
 
-    @Column({
-        type: 'enum',
-        enum: UserStatus,
-        default: UserStatus.OFFLINE,
-    })
-    status: UserStatus;
-
     @Column({ name: 'currentRefreshToken', type: 'text', nullable: true })
     currentRefreshToken: string | null;
 
@@ -57,15 +43,4 @@ export class UserEntity {
 
     @UpdateDateColumn({ name: 'updatedAt' })
     updatedAt: Date;
-
-    // --- Relations ---
-
-    // @OneToMany(() => ConversationMember, member => member.user)
-    // memberships: ConversationMember[];
-
-    // @OneToMany(() => Message, message => message.sender)
-    // messages: Message[];
-
-    // @OneToMany(() => Story, story => story.user)
-    // stories: Story[];
 }
